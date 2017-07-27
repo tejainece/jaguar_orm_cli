@@ -37,7 +37,7 @@ class Writer {
 
   void _writeFields(Field field) {
     _w.writeln(
-        "static final ${field.vType} ${field.field} = new ${field.vType}('${field.key}');");
+        "final ${field.vType} ${field.field} = new ${field.vType}('${field.key}');");
     _w.writeln();
   }
 
@@ -121,5 +121,9 @@ class Writer {
         'final Remove remove = remover.where(this.${_b.primary.field}.eq(${_b.primary.field}));');
     _w.writeln('return execRemove(remove);');
     _w.writeln('}');
+  }
+
+  void _writeForeignBean(ForeignBean m) {
+    _w.write('Future<> findBy');
   }
 }

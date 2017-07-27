@@ -1,8 +1,15 @@
 library jaguar_orm.generator.model;
+
 import 'package:analyzer/dart/element/type.dart';
 
 import 'package:jaguar_orm_cli/src/parser/parser.dart';
 import 'package:jaguar_orm_cli/src/common/common.dart';
+
+class ForeignBean {
+  final String relationName;
+
+  final List<String> fields;
+}
 
 class Field {
   final String field;
