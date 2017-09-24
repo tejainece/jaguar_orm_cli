@@ -363,19 +363,19 @@ class Writer {
     _w.writeln(', [bool cascade = false]) async {');
 
     _writeln('if (cascade) {');
-    _w.writeln('${_b.modelType} newModel;');
+    _w.writeln('final ${_b.modelType} newModel = ');
+    _w.writeln('await find(');
+    _write(_b.primary.map((f) {
+      return '${f.field}';
+    }).join(','));
+    _writeln(');');
     for (Preload p in _b.preloads) {
       if (p is PreloadOneToX) {
         _write(
             'await ' + p.beanInstanceName + '.removeBy' + _b.modelType + '(');
-        _write(p.fields.map((f) => f.field).join(', '));
+        _write(p.fields.map((f) => 'newModel.' + f.field).join(', '));
         _writeln(');');
       } else if (p is PreloadManyToMany) {
-        _w.writeln('newModel ??= await find(');
-        _write(_b.primary.map((f) {
-          return '${f.field}';
-        }).join(','));
-        _writeln(');');
         _write('await ${p.beanInstanceName}.detach${_b.modelType}(newModel);');
       }
     }
@@ -658,7 +658,10 @@ class Writer {
     FindByForeignBean o = _b.getMatchingManyToMany(m);
     for (int i = 0; i < o.fields.length; i++) {
       _write(
-          '$beanName.${o.foreignFields[i].field}.eq(t.${o.fields[i].field}),');
+          '$beanName.${o.foreignFields[i].field}.eq(t.${o.fields[i].field})');
+      if (i < o.fields.length - 1) {
+        _write('&');
+      }
     }
     _writeln(');');
     _writeln('}');
@@ -682,7 +685,10 @@ class Writer {
     FindByForeignBean o = _b.getMatchingManyToMany(m);
     for (int i = 0; i < o.fields.length; i++) {
       _write(
-          '$beanName.${o.foreignFields[i].field}.eq(t.${o.fields[i].field}),');
+          '$beanName.${o.foreignFields[i].field}.eq(t.${o.fields[i].field})');
+      if (i < o.fields.length - 1) {
+        _write('&');
+      }
     }
     _writeln(');');
     _writeln('}');

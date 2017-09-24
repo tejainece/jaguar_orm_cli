@@ -12,72 +12,83 @@ part 'many_to_many.g.dart';
 
 class Category {
   @PrimaryKey()
-  String catid;
+  String id;
 
   String name;
 
-  @ManyToMany(CategoryTodolistBean, TodoListBean)
+  @ManyToMany(PivotBean, TodoListBean)
   List<TodoList> todolists;
 
   static const String tableName = 'category';
 
-  String toString() => "Category($catid, $name, $todolists)";
+  String toString() => "Category($id, $name, $todolists)";
 }
 
 class TodoList {
   @PrimaryKey()
-  String todid;
+  String id;
 
-  String name;
+  int id1;
 
   String description;
 
-  @ManyToMany(CategoryTodolistBean, CategoryBean)
+  @ManyToMany(PivotBean, CategoryBean)
   List<Category> categories;
 
   static String tableName = 'todolist';
 
-  String toString() => "Post($todid, $name, $description, $categories)";
+  String toString() => "Post($id, $id1, $description, $categories)";
 }
 
-class CategoryTodolist {
-  @BelongsToMany(TodoListBean, refCol: 'todid')
+class Pivot {
+  @BelongsToMany(TodoListBean)
   String todolist_id;
 
-  @BelongsToMany(CategoryBean, refCol: 'catid')
+  @BelongsToMany(TodoListBean, refCol: 'id1')
+  int todolist_id1;
+
+  @BelongsToMany(CategoryBean)
   String category_id;
 
-  static String tableName = 'category_todolist';
+  static String tableName = 'pivot';
 }
 
 @GenBean()
 class TodoListBean extends Bean<TodoList> with _TodoListBean {
-  final CategoryTodolistBean categoryTodolistBean;
+  PivotBean _pivotBean;
 
-  final CategoryBean categoryBean;
+  CategoryBean _categoryBean;
 
-  TodoListBean(Adapter adapter)
-      : categoryTodolistBean = new CategoryTodolistBean(adapter),
-        categoryBean = new CategoryBean(adapter),
-        super(adapter);
+  TodoListBean(Adapter adapter) : super(adapter);
+
+  PivotBean get pivotBean {
+    _pivotBean ??= new PivotBean(adapter);
+    return _pivotBean;
+  }
+
+  CategoryBean get categoryBean {
+    _categoryBean ??= new CategoryBean(adapter);
+    return _categoryBean;
+  }
 
   Future createTable() {
     final st = Sql
         .create(tableName)
         .addStr('id', primary: true, length: 50)
-        .addStr('name', length: 50);
+        .addInt('id1', primary: true)
+        .addStr('description', length: 50);
     return execCreateTable(st);
   }
 }
 
 @GenBean()
 class CategoryBean extends Bean<Category> with _CategoryBean {
-  final CategoryTodolistBean categoryTodolistBean;
+  final PivotBean pivotBean;
 
   final TodoListBean todoListBean;
 
   CategoryBean(Adapter adapter)
-      : categoryTodolistBean = new CategoryTodolistBean(adapter),
+      : pivotBean = new PivotBean(adapter),
         todoListBean = new TodoListBean(adapter),
         super(adapter);
 
@@ -85,30 +96,38 @@ class CategoryBean extends Bean<Category> with _CategoryBean {
     final st = Sql
         .create(tableName)
         .addStr('id', primary: true, length: 50)
-        .addStr('street', length: 150)
-        .addStr('userid', length: 50, foreignTable: '_user', foreignCol: 'id');
+        .addStr('name', length: 150);
     return execCreateTable(st);
   }
 }
 
 @GenBean()
-class CategoryTodolistBean extends Bean<CategoryTodolist>
-    with _CategoryTodolistBean {
-  final CategoryBean categoryBean;
+class PivotBean extends Bean<Pivot> with _PivotBean {
+  CategoryBean _categoryBean;
 
-  final TodoListBean todoListBean;
+  TodoListBean _todoListBean;
 
-  CategoryTodolistBean(Adapter adapter)
-      : categoryBean = new CategoryBean(adapter),
-        todoListBean = new TodoListBean(adapter),
-        super(adapter);
+  PivotBean(Adapter adapter) : super(adapter);
+
+  CategoryBean get categoryBean {
+    _categoryBean ??= new CategoryBean(adapter);
+    return _categoryBean;
+  }
+
+  TodoListBean get todoListBean {
+    _todoListBean ??= new TodoListBean(adapter);
+    return _todoListBean;
+  }
 
   Future createTable() {
     final st = Sql
         .create(tableName)
-        .addStr('id', primary: true, length: 50)
-        .addStr('street', length: 150)
-        .addStr('userid', length: 50, foreignTable: '_user', foreignCol: 'id');
+        .addStr('todolist_id',
+            length: 50, foreignTable: TodoList.tableName, foreignCol: 'id')
+        .addInt('todolist_id1',
+            foreignTable: TodoList.tableName, foreignCol: 'id1')
+        .addStr('category_id',
+            length: 50, foreignTable: Category.tableName, foreignCol: 'id');
     return execCreateTable(st);
   }
 }

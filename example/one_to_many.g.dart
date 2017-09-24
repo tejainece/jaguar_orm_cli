@@ -83,8 +83,8 @@ abstract class _AuthorBean implements Bean<Author> {
 
   Future<int> remove(String id, [bool cascade = false]) async {
     if (cascade) {
-      Author newModel;
-      await postBean.removeByAuthor(id);
+      final Author newModel = await find(id);
+      await postBean.removeByAuthor(newModel.id);
     }
     final Remove remove = remover.where(this.id.eq(id));
     return execRemove(remove);
