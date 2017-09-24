@@ -1,0 +1,3 @@
+beans:
+  - example/one_to_many.dart
+  - example/many_to_many.dart

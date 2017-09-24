@@ -2,28 +2,112 @@ library jaguar_orm.generator.model;
 
 import 'package:analyzer/dart/element/type.dart';
 
-import 'package:jaguar_orm_cli/src/parser/parser.dart';
 import 'package:jaguar_orm_cli/src/common/common.dart';
 
-class ForeignBean {
-  final String relationName;
+abstract class FindByForeign {
+  List<Field> get fields;
 
-  final List<String> fields;
+  bool get isMany;
+}
+
+/// Model that contains information to write find method by foreign relation
+class FindByForeignBean implements FindByForeign {
+  final DartType bean;
+
+  final DartType model;
+
+  final List<Field> fields;
+
+  final List<Field> foreignFields;
+
+  bool get isMany => other.hasMany;
+
+  bool get belongsToMany => other is PreloadManyToMany;
+
+  final WriterInfo beanInfo;
+
+  final Preload other;
+
+  FindByForeignBean(
+      this.bean, this.fields, this.foreignFields, this.beanInfo, this.other)
+      : model = getModelForBean(bean);
+
+  String get beanName => bean.name;
+
+  String get modelName => model.name;
+
+  String get beanInstanceName => uncap(modelName) + 'Bean';
+}
+
+class FindByForeignTable implements FindByForeign {
+  final List<Field> fields;
+
+  final bool isMany;
+
+  final String table;
+
+  FindByForeignTable(this.fields, this.isMany, this.table);
+}
+
+abstract class Foreign {
+  String get refCol;
+}
+
+class ForeignBeaned implements Foreign {
+  final DartType bean;
+
+  final String refCol;
+
+  final DartType model;
+
+  final bool belongsToMany;
+
+  ForeignBeaned(this.bean, this.refCol, this.belongsToMany)
+      : model = getModelForBean(bean);
+
+  String get beanName => bean.name;
+
+  String get modelName => model.name;
+
+  String get beanInstanceName => uncap(modelName) + 'Bean';
+}
+
+class ForeignTabled implements Foreign {
+  final String table;
+
+  final String refCol;
+
+  ForeignTabled(this.table, this.refCol);
 }
 
 class Field {
-  final String field;
-
   final String type;
 
-  final String vType;
+  final String field;
 
-  final String key;
+  String get vType {
+    try {
+      return getValType(type);
+    } catch (e) {
+      throw new FieldException(field, e.toString());
+    }
+  }
 
-  Field(this.type, this.vType, this.field, this.key);
+  final String colName;
 
-  static Field fromParsed(ParsedColumn col) => new Field(
-      col.fieldType.name, _getValType(col.fieldType), col.name, col.key);
+  final bool nullable;
+
+  final bool primary;
+
+  final Foreign foreign;
+
+  bool get auto => false;
+
+  //TODO unique
+
+  Field(this.type, this.field, String colName,
+      {this.nullable: false, this.primary: false, this.foreign})
+      : colName = colName ?? field;
 }
 
 class WriterInfo {
@@ -31,42 +115,121 @@ class WriterInfo {
 
   final String modelType;
 
-  final List<Field> fields;
+  final Map<String, Field> fields;
 
-  final Field primary;
+  final List<Field> primary;
 
-  WriterInfo(this.name, this.modelType, this.fields, this.primary);
-}
+  /// A map of bean to [FindByForeign]
+  final Map<DartType, FindByForeignBean> getByForeign;
 
-class ToModel {
-  final ParsedBean _parsed;
+  /// A map of association to [FindByForeign]
+  final Map<String, FindByForeignTable> getByForeignTabled;
 
-  WriterInfo _model;
+  final List<Preload> preloads;
 
-  ToModel(this._parsed) {
-    final List<Field> fields = [];
+  Field fieldByColName(String colName) => fields.values
+      .firstWhere((Field f) => f.colName == colName, orElse: () => null);
 
-    _parsed.columns.map(Field.fromParsed).forEach(fields.add);
+  WriterInfo(this.name, this.modelType, this.fields, this.primary,
+      this.getByForeign, this.getByForeignTabled, this.preloads);
 
-    _model = new WriterInfo(_parsed.name, _parsed.model.name, fields,
-        Field.fromParsed(_parsed.primary));
+  Preload findHasXByAssociation(DartType association) {
+    final found =
+        preloads.firstWhere((p) => p.bean == association, orElse: () => null);
+
+    if (found == null) {
+      throw new Exception('Association not found!');
+    }
+
+    return found;
   }
 
-  WriterInfo get model => _model;
+  FindByForeignBean getMatchingManyToMany(FindByForeignBean val) {
+    for (FindByForeignBean f in getByForeign.values) {
+      if (!f.belongsToMany) continue;
+
+      if (f == val) continue;
+
+      return f;
+    }
+    return null;
+  }
 }
 
-String _getValType(DartType type) {
-  if (isString.isExactlyType(type)) {
+String getValType(String type) {
+  if (type == 'String') {
     return 'StrField';
-  } else if (isBool.isExactlyType(type)) {
+  } else if (type == 'bool') {
     return 'BitField';
-  } else if (isInt.isExactlyType(type)) {
+  } else if (type == 'int') {
     return 'IntField';
-  } else if (isNum.isExactlyType(type) || isDouble.isExactlyType(type)) {
+  } else if (type == 'num' || type == 'double') {
     return 'NumField';
-  } else if (isDateTime.isExactlyType(type)) {
+  } else if (type == 'DateTime') {
     return 'DateTimeField';
   }
 
   throw new Exception('Field type not recognised!');
+}
+
+/// Contains information about `HasOne`, `HasMany`, `ManyToMany` relationships
+abstract class Preload {
+  DartType get bean;
+
+  String get beanName => bean.name;
+
+  String get beanInstanceName => uncap(modelName) + 'Bean';
+
+  String get modelName => getModelForBean(bean).name;
+
+  String get property;
+
+  List<Field> get fields;
+
+  List<Field> get foreignFields;
+
+  bool get hasMany;
+}
+
+/// Contains information about `HasOne`, `HasMany` relationships
+class PreloadOneToX extends Preload {
+  final DartType bean;
+
+  final String property;
+
+  final List<Field> fields = <Field>[];
+
+  final List<Field> foreignFields;
+
+  /// true for `HasMany`. false for `HasOne`
+  final bool hasMany;
+
+  PreloadOneToX(this.bean, this.property, this.foreignFields, this.hasMany);
+}
+
+class PreloadManyToMany extends Preload {
+  final DartType bean;
+
+  final DartType targetBean;
+
+  String get targetBeanName => targetBean.name;
+
+  String get targetBeanInstanceName => uncap(targetModelName) + 'Bean';
+
+  String get targetModelName => getModelForBean(targetBean).name;
+
+  final String property;
+
+  final WriterInfo targetInfo;
+
+  final WriterInfo beanInfo;
+
+  final List<Field> fields = <Field>[];
+
+  final List<Field> foreignFields;
+
+  final bool hasMany = true;
+
+  PreloadManyToMany(this.bean, this.targetBean, this.property, this.targetInfo,
+      this.beanInfo, this.foreignFields);
 }

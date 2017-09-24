@@ -1,5 +1,6 @@
 import 'package:source_gen/source_gen.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/dart/element/element.dart';
 
 import 'package:jaguar_query/jaguar_query.dart';
 import 'package:jaguar_orm/jaguar_orm.dart';
@@ -15,6 +16,18 @@ final isColumn = new TypeChecker.fromRuntime(Column);
 final isPrimaryKey = new TypeChecker.fromRuntime(PrimaryKey);
 
 final isForeignKey = new TypeChecker.fromRuntime(ForeignKey);
+
+final isBelongsTo = new TypeChecker.fromRuntime(BelongsTo);
+
+final isBelongsToMany = new TypeChecker.fromRuntime(BelongsToMany);
+
+final isRelation = new TypeChecker.fromRuntime(Relation);
+
+final isHasOne = new TypeChecker.fromRuntime(HasOne);
+
+final isHasMany = new TypeChecker.fromRuntime(HasMany);
+
+final isManyToMany = new TypeChecker.fromRuntime(ManyToMany);
 
 final isList = new TypeChecker.fromRuntime(List);
 
@@ -41,3 +54,23 @@ bool isBuiltin(DartType type) {
 
   return false;
 }
+
+DartType getModelForBean(DartType bean) {
+  ClassElement c = bean.element;
+  InterfaceType i =
+      c.allSupertypes.firstWhere((InterfaceType i) => isBean.isExactlyType(i));
+  return i.typeArguments[0];
+}
+
+class FieldException {
+  String name;
+
+  String message;
+
+  FieldException(this.name, this.message);
+
+  String toString() => 'Field $name has exception: $message';
+}
+
+String uncap(String str) =>
+    str.substring(0, 1).toLowerCase() + str.substring(1);
