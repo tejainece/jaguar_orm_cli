@@ -97,6 +97,10 @@ class Field {
 
   final bool nullable;
 
+  final bool autoIncrement;
+
+  final int length;
+
   final bool primary;
 
   final Foreign foreign;
@@ -106,7 +110,11 @@ class Field {
   //TODO unique
 
   Field(this.type, this.field, String colName,
-      {this.nullable: false, this.primary: false, this.foreign})
+      {this.nullable: false,
+      this.autoIncrement: false,
+      this.length,
+      this.primary: false,
+      this.foreign})
       : colName = colName ?? field;
 }
 

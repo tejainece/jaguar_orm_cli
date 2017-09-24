@@ -253,11 +253,17 @@ class ParsedBean {
 Field parseColumn(FieldElement f, DartObject obj) {
   final String colName = obj.getField('col').toStringValue();
   final bool nullable = obj.getField('nullable').toBoolValue();
+  final bool autoIncrement = obj.getField('autoIncrement').toBoolValue();
+  final int length = obj.getField('length').toIntValue();
   if (isColumn.isExactlyType(obj.type)) {
-    return new Field(f.type.name, f.name, colName, nullable: nullable);
+    return new Field(f.type.name, f.name, colName,
+        nullable: nullable, autoIncrement: autoIncrement, length: length);
   } else if (isPrimaryKey.isExactlyType(obj.type)) {
     return new Field(f.type.name, f.name, colName,
-        nullable: nullable, primary: true);
+        nullable: nullable,
+        primary: true,
+        autoIncrement: autoIncrement,
+        length: length);
   } else if (isForeignKey.isAssignableFromType(obj.type)) {
     final DartType bean = obj.getField('bean').toTypeValue();
     final String table = obj.getField('table').toStringValue();
@@ -277,7 +283,10 @@ Field parseColumn(FieldElement f, DartObject obj) {
       throw new Exception('ForeignKey must either be tabled or beaned!');
     }
     return new Field(f.type.name, f.name, colName,
-        nullable: nullable, foreign: fore);
+        nullable: nullable,
+        foreign: fore,
+        autoIncrement: autoIncrement,
+        length: length);
   }
 
   throw new FieldException(f.name, 'Invalid ColumnBase type!');

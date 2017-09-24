@@ -1,6 +1,6 @@
 name: jaguar_orm_cli
 description: CLI and generator for jaguar_orm
-version: 0.2.3-dev
+version: 0.2.4
 authors:
 - Ravi Teja Gudapati <tejainece@gmail.com>
 - Kevin Segaud <segaud.kevin@gmail.com>
@@ -14,7 +14,7 @@ environment:
 
 dependencies:
   jaguar_query: ^0.2.8
-  jaguar_orm: ^0.2.1-dev
+  jaguar_orm: ^0.2.3
   source_gen: ^0.7.0
   build_runner: '>=0.3.4 <0.4.0'
   build: '>=0.9.3 <0.10.0'

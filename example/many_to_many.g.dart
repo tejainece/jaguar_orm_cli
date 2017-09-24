@@ -35,6 +35,14 @@ abstract class _TodoListBean implements Bean<TodoList> {
     return ret;
   }
 
+  Future createTable() async {
+    final st = Sql.create(tableName);
+    st.addStr(id.name, primary: true);
+    st.addInt(id1.name);
+    st.addStr(description.name);
+    return execCreateTable(st);
+  }
+
   Future<Null> insert(TodoList model, {bool cascade: false}) async {
     final Insert insert = inserter.setMany(toSetColumns(model));
     await execInsert(insert);
@@ -135,6 +143,13 @@ abstract class _CategoryBean implements Bean<Category> {
     ret.add(name.set(model.name));
 
     return ret;
+  }
+
+  Future createTable() async {
+    final st = Sql.create(tableName);
+    st.addStr(id.name, primary: true);
+    st.addStr(name.name);
+    return execCreateTable(st);
   }
 
   Future<Null> insert(Category model, {bool cascade: false}) async {
@@ -241,6 +256,17 @@ abstract class _PivotBean implements Bean<Pivot> {
     ret.add(categoryId.set(model.categoryId));
 
     return ret;
+  }
+
+  Future createTable() async {
+    final st = Sql.create(tableName);
+    st.addStr(todolistId.name,
+        foreignTable: TodoList.tableName, foreignCol: 'id');
+    st.addInt(todolistId1.name,
+        foreignTable: TodoList.tableName, foreignCol: 'id1');
+    st.addStr(categoryId.name,
+        foreignTable: Category.tableName, foreignCol: 'id');
+    return execCreateTable(st);
   }
 
   Future<dynamic> insert(Pivot model) async {

@@ -39,6 +39,8 @@ class Writer {
 
     _writeToSetColumns();
 
+    _writeCreate();
+
     _writeCrud();
 
     // TODO get by foreign for non-beaned
@@ -101,6 +103,62 @@ class Writer {
 
     _w.writeln();
     _w.writeln('return model;');
+    _w.writeln('}');
+  }
+
+  void _writeCreate() {
+    _w.writeln('Future createTable() async {');
+    _writeln('final st = Sql.create(tableName);');
+    for (final Field f in _b.fields.values) {
+      _write('st.add');
+
+      if (f.type == 'String') {
+        _write('Str');
+      } else if (f.type == 'bool') {
+        _write('Bool');
+      } else if (f.type == 'int') {
+        _write('Int');
+      } else if (f.type == 'num' || f.type == 'double') {
+        _write('Int');
+      } else if (f.type == 'DateTime') {
+        _write('DateTime');
+      } else {
+        throw new Exception('Invalid column data type!');
+      }
+      _write('(');
+      _write('${f.field}.name');
+
+      if (f.primary) {
+        _write(', primary: true');
+      }
+
+      if (f.foreign != null) {
+        final foreign = f.foreign;
+        if (foreign is ForeignBeaned) {
+          _write(', foreignTable: ${foreign.modelName}.tableName');
+          _write(", foreignCol: '${foreign.refCol}'");
+        } else {
+          throw new Exception('Unimplemented!');
+        }
+      }
+
+      if (f.autoIncrement) {
+        if (f.type != 'int') {
+          throw new Exception('Auto increment is allowed only on int columns!');
+        }
+        _write(", autoIncrement: ${f.autoIncrement}");
+      }
+
+      if (f.length != null) {
+        if (f.type != 'String') {
+          throw new Exception('Length is allowed only on text columns!');
+        }
+        _write(", length: ${f.length}");
+      }
+
+      _writeln(');');
+    }
+    _writeln('return execCreateTable(st);');
     _w.writeln('}');
   }
 
