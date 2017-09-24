@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Angular like table specification
+
 ## 0.2.2
 
 - Convert camel case fields to snake case

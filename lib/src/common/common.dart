@@ -5,6 +5,8 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:jaguar_query/jaguar_query.dart';
 import 'package:jaguar_orm/jaguar_orm.dart';
 
+final isGenBean = new TypeChecker.fromRuntime(GenBean);
+
 final isBean = new TypeChecker.fromRuntime(Bean);
 
 final isIgnore = new TypeChecker.fromRuntime(IgnoreColumn);

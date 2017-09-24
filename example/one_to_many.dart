@@ -1,20 +1,16 @@
 library example.one_to_many;
 
-import 'dart:io';
 import 'dart:async';
 import 'package:jaguar_query/jaguar_query.dart';
 import 'package:jaguar_orm/jaguar_orm.dart';
-import 'package:jaguar_orm/src/relations/relations.dart';
 
 part 'one_to_many.g.dart';
 
 class Author {
-  @PrimaryKey()
   String id;
 
   String name;
 
-  @HasMany(PostBean)
   List<Post> posts;
 
   static const String tableName = 'author';
@@ -36,7 +32,14 @@ class Post {
   String toString() => "Post($id, $authorId, $message)";
 }
 
-@GenBean()
+@GenBean(
+  columns: const {
+    'id': const PrimaryKey(),
+  },
+  relations: const {
+    'posts': const HasMany(PostBean),
+  },
+)
 class AuthorBean extends Bean<Author> with _AuthorBean {
   final PostBean postBean;
 

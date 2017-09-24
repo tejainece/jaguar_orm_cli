@@ -1,5 +1,6 @@
 library jaguar_orm.generator.parser;
 
+import 'package:source_gen/source_gen.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/constant/value.dart';
@@ -22,6 +23,10 @@ class ParsedBean {
       throw new Exception("Don't support Model of type dynamic!");
     }
 
+    final genBean = new ConstantReader(clazz.metadata
+        .firstWhere((m) => isGenBean.isExactlyType(m.constantValue.type))
+        .constantValue);
+
     final ClassElement modelClass = model.element;
 
     final fields = <String, Field>{};
@@ -30,7 +35,59 @@ class ParsedBean {
 
     final primaries = <Field>[];
 
+    final Set<String> ignores = new Set<String>();
+
+    // Parse columns from GenBean::columns specification
+    {
+      final Map cols = genBean.read('columns').mapValue;
+      for (DartObject name in cols.keys) {
+        final fName = name.toStringValue();
+        final f = modelClass.getField(fName);
+
+        if (f == null) {
+          throw new Exception('Cannot find field $fName!');
+        }
+
+        final DartObject spec = cols[name];
+        if (isIgnore.isExactlyType(spec.type)) {
+          ignores.add(fName);
+          continue;
+        }
+
+        final val = parseColumn(f, spec);
+
+        fields[val.field] = val;
+        if (val.primary) primaries.add(val);
+      }
+    }
+
+    final Set<String> relations = new Set<String>();
+
+    // Parse relations from GenBean::relations specification
+    {
+      final Map cols = genBean.read('relations').mapValue;
+      for (DartObject name in cols.keys) {
+        final fName = name.toStringValue();
+        final f = modelClass.getField(fName);
+
+        if (f == null) {
+          throw new Exception('Cannot find field $fName!');
+        }
+
+        relations.add(fName);
+
+        final DartObject spec = cols[name];
+        preloads.add(parseRelation(clazz.type, f, spec, doRelations));
+      }
+    }
+
     for (FieldElement field in modelClass.fields) {
+      if (fields.containsKey(field.name)) continue;
+
+      if (relations.contains(field.name)) continue;
+
+      if (ignores.contains(field.name)) continue;
+
       //If IgnoreField is present, skip!
       {
         int ignore = field.metadata
@@ -39,13 +96,12 @@ class ParsedBean {
             .length;
 
         if (ignore != 0) {
+          ignores.add(field.name);
           continue;
         }
       }
 
-      if (field.isStatic) {
-        continue;
-      }
+      if (field.isStatic) continue;
 
       final val = _makeField(field);
 
@@ -168,8 +224,6 @@ class ParsedBean {
         .where((DartObject i) => isColumnBase.isAssignableFromType(i.type))
         .map((DartObject i) => parseColumn(f, i))
         .toList();
-
-    //TODO throw non supported types
 
     if (fields.length > 1) {
       throw new Exception('Only one Column annotation is allowed on a Field!');

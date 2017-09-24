@@ -6,7 +6,6 @@ library example.many_to_many;
 import 'dart:async';
 import 'package:jaguar_query/jaguar_query.dart';
 import 'package:jaguar_orm/jaguar_orm.dart';
-import 'package:jaguar_orm/src/relations/relations.dart';
 
 part 'many_to_many.g.dart';
 
