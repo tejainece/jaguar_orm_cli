@@ -42,13 +42,13 @@ class TodoList {
 
 class Pivot {
   @BelongsToMany(TodoListBean)
-  String todolist_id;
+  String todolistId;
 
   @BelongsToMany(TodoListBean, refCol: 'id1')
-  int todolist_id1;
+  int todolistId1;
 
   @BelongsToMany(CategoryBean)
-  String category_id;
+  String categoryId;
 
   static String tableName = 'pivot';
 }

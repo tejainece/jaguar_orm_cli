@@ -13,6 +13,20 @@ class Writer {
 
   String toString() => _w.toString();
 
+  String camToSnak(String str) {
+    final sb = new StringBuffer();
+
+    for (int i = 0; i < str.length; i++) {
+      final int code = str.codeUnitAt(i);
+      if (code >= 65 && code <= 90) {
+        sb.write('_');
+      }
+      sb.writeCharCode(code);
+    }
+
+    return sb.toString().toLowerCase();
+  }
+
   void _generate() {
     _w.writeln('abstract class _${_b.name} implements Bean<${_b.modelType}> {');
     _w.writeln();
@@ -72,7 +86,7 @@ class Writer {
 
   void _writeFields(Field field) {
     _writeln(
-        "final ${field.vType} ${field.field} = new ${field.vType}('${field.colName}');");
+        "final ${field.vType} ${field.field} = new ${field.vType}('${camToSnak(field.colName)}');");
     _w.writeln();
   }
 
@@ -82,7 +96,7 @@ class Writer {
     _w.writeln();
 
     _b.fields.values.forEach((Field field) {
-      _w.writeln("model.${field.field} = map['${field.colName}'];");
+      _w.writeln("model.${field.field} = map['${camToSnak(field.colName)}'];");
     });
 
     _w.writeln();

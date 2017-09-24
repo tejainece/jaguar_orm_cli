@@ -29,11 +29,11 @@ class Post {
   String message;
 
   @BelongsTo(AuthorBean)
-  String authorid;
+  String authorId;
 
   static String tableName = 'post';
 
-  String toString() => "Post($id, $authorid, $message)";
+  String toString() => "Post($id, $authorId, $message)";
 }
 
 @GenBean()
@@ -62,7 +62,7 @@ class PostBean extends Bean<Post> with _PostBean {
         .create(tableName)
         .addStr('id', primary: true, length: 50)
         .addStr('message', length: 150)
-        .addStr('authorid',
+        .addStr('author_id',
             length: 50, foreignTable: Author.tableName, foreignCol: 'id');
     return execCreateTable(st);
   }
